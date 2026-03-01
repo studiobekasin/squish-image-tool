@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Squish — Image Compressor & Resizer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: #2a2a32;
+    --text: #e8e8ed;
+    --text2: #8888a0;
+    --accent: #ff6b35;
+    --accent2: #ff9a6c;
+    --green: #34d399;
+    --red: #f87171;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 24px;
+    color: var(--accent);
+    letter-spacing: -1px;
+    white-space: nowrap;
+  }
+
+  .logo span { color: var(--text2); font-size: 13px; margin-left: 10px; letter-spacing: 0; font-family: 'DM Sans', sans-serif; }
+
+  .batch-info { font-size: 14px; color: var(--text2); white-space: nowrap; }
+  .batch-info strong { color: var(--text); }
+
+  .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 60px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+  }
+
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(255, 107, 53, 0.04);
+  }
+
+  .dropzone-icon { font-size: 56px; margin-bottom: 12px; opacity: 0.8; }
+  .dropzone h2 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+  .dropzone p { color: var(--text2); font-size: 15px; }
+  .dropzone input { display: none; }
+
+  .panel {
+    margin-top: 16px;
+    padding: 20px;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .panel-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    align-items: end;
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .control-group input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 16px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .control-group input:focus { border-color: var(--accent); }
+
+  .slider-wrap { display: flex; align-items: center; gap: 12px; }
+
+  .slider-wrap input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    outline: none;
+  }
+
+  .slider-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 3px solid var(--bg);
+  }
+
+  .slider-val {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .size-row { display: flex; gap: 8px; align-items: center; }
+  .size-row input { width: 100%; }
+  .size-row .x { color: var(--text2); font-size: 18px; font-weight: 700; flex-shrink: 0; }
+
+  .lock-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .lock-btn.locked {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(255, 107, 53, 0.1);
+  }
+
+  .format-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .format-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 12px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text2);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .format-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255, 107, 53, 0.08); }
+  .format-btn:hover { border-color: var(--text2); }
+
+  .presets-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .preset-btn {
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .preset-btn:hover { border-color: var(--text2); color: var(--text); }
+  .preset-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255, 107, 53, 0.08); }
+  .preset-dim { font-size: 11px; color: var(--text2); margin-left: 4px; opacity: 0.7; }
+  .preset-btn.active .preset-dim { color: var(--accent2); }
+
+  .options-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+
+  .toggle-row { display: flex; align-items: center; gap: 12px; }
+
+  .toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 2px;
+    top: 2px;
+    background: var(--text2);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .toggle-switch input:checked + .toggle-track { background: rgba(255, 107, 53, 0.2); border-color: var(--accent); }
+  .toggle-switch input:checked + .toggle-track::after { transform: translateX(20px); background: var(--accent); }
+
+  .toggle-text { font-size: 14px; color: var(--text); font-weight: 500; }
+  .toggle-sub { font-size: 12px; color: var(--text2); }
+
+  .checkerboard-preview {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background-image: repeating-conic-gradient(#444 0% 25%, #666 0% 50%);
+    background-size: 8px 8px;
+    flex-shrink: 0;
+  }
+
+  .action-bar { display: flex; gap: 10px; margin-top: 16px; }
+
+  .btn-process {
+    flex: 1;
+    padding: 16px 36px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .btn-process:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-process:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .results { margin-top: 24px; }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .results-header h3 { font-size: 16px; font-weight: 500; }
+  .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn-download-all {
+    padding: 10px 20px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-download-all:hover { opacity: 0.85; }
+
+  .btn-clear {
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-clear:hover { border-color: var(--red); color: var(--red); }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .image-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .image-card:hover { border-color: var(--accent); }
+
+  .image-card .preview {
+    height: 180px;
+    overflow: hidden;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image-card .preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+  .image-card .info { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .image-card .filename { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .image-card .meta { display: flex; gap: 12px; font-size: 12px; color: var(--text2); }
+  .image-card .savings { font-size: 13px; font-weight: 700; color: var(--green); }
+  .image-card .savings.bigger { color: var(--red); }
+
+  .card-actions { display: flex; gap: 6px; }
+
+  .btn-sm {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-sm.download { background: var(--accent); color: #fff; }
+  .btn-sm.download:hover { background: var(--accent2); }
+  .btn-sm.remove { background: var(--surface2); color: var(--text2); flex: 0; padding: 10px 14px; }
+  .btn-sm.remove:hover { color: var(--red); }
+
+  .processing {
+    position: fixed;
+    inset: 0;
+    background: rgba(14, 14, 16, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(6px);
+  }
+
+  .processing-inner { text-align: center; padding: 24px; width: 90%; max-width: 400px; }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--surface2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    margin-top: 16px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.15s ease;
+    width: 0%;
+  }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 768px) {
+    .header { padding: 16px; }
+    .logo { font-size: 20px; }
+    .logo span { font-size: 11px; margin-left: 6px; }
+    .main { padding: 16px; }
+    .dropzone { padding: 40px 16px; }
+    .dropzone-icon { font-size: 44px; }
+    .dropzone h2 { font-size: 18px; }
+    .dropzone p { font-size: 13px; }
+    .controls-grid { grid-template-columns: 1fr; gap: 16px; }
+    .panel { padding: 16px; }
+    .preset-btn { padding: 8px 10px; font-size: 12px; }
+    .preset-dim { font-size: 10px; }
+    .format-btn { padding: 10px 6px; font-size: 13px; min-width: 50px; }
+    .image-grid { grid-template-columns: 1fr; }
+    .results-header { flex-direction: column; align-items: flex-start; }
+    .results-actions { width: 100%; }
+    .btn-download-all, .btn-clear { flex: 1; text-align: center; }
+  }
+
+  @media (max-width: 480px) {
+    .presets-grid { gap: 4px; }
+    .preset-btn { padding: 7px 8px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">SQUISH <span>compress & resize</span></div>
+  <div class="batch-info" id="batchInfo"></div>
+</div>
+
+<div class="main">
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-icon">📦</div>
+    <h2>Drop images here</h2>
+    <p>or tap to browse — JPG, PNG, WebP, AVIF</p>
+    <input type="file" id="fileInput" multiple accept="image/*">
+  </div>
+
+  <div class="panel">
+    <div class="controls-grid">
+      <div class="control-group">
+        <label>Quality</label>
+        <div class="slider-wrap">
+          <input type="range" id="quality" min="1" max="100" value="80">
+          <span class="slider-val" id="qualityVal">80%</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Resize (px)</label>
+        <div class="size-row">
+          <input type="number" id="resizeW" placeholder="W" min="1" inputmode="numeric">
+          <span class="x">×</span>
+          <input type="number" id="resizeH" placeholder="H" min="1" inputmode="numeric">
+          <button class="lock-btn locked" id="lockBtn" title="Lock aspect ratio">🔗</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Output Format</label>
+        <div class="format-row">
+          <button class="format-btn active" data-fmt="original">Auto</button>
+          <button class="format-btn" data-fmt="image/jpeg">JPG</button>
+          <button class="format-btn" data-fmt="image/png">PNG</button>
+          <button class="format-btn" data-fmt="image/webp">WebP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <span class="panel-label">Dimension Presets</span>
+    <div class="presets-grid">
+      <button class="preset-btn" data-w="" data-h="">Custom</button>
+      <button class="preset-btn" data-w="1080" data-h="1920">Mobile<span class="preset-dim">1080×1920</span></button>
+      <button class="preset-btn" data-w="1920" data-h="1080">16:9 HD<span class="preset-dim">1920×1080</span></button>
+      <button class="preset-btn" data-w="3840" data-h="2160">16:9 4K<span class="preset-dim">3840×2160</span></button>
+      <button class="preset-btn" data-w="1080" data-h="1080">Square<span class="preset-dim">1080×1080</span></button>
+      <button class="preset-btn" data-w="1080" data-h="1350">Instagram<span class="preset-dim">1080×1350</span></button>
+      <button class="preset-btn" data-w="1200" data-h="628">OG / Social<span class="preset-dim">1200×628</span></button>
+      <button class="preset-btn" data-w="3000" data-h="4000">3K Portrait<span class="preset-dim">3000×4000</span></button>
+      <button class="preset-btn" data-w="4000" data-h="4000">4K Square<span class="preset-dim">4000×4000</span></button>
+      <button class="preset-btn" data-w="2480" data-h="3508">A4 300dpi<span class="preset-dim">2480×3508</span></button>
+      <button class="preset-btn" data-w="800" data-h="600">Web Small<span class="preset-dim">800×600</span></button>
+      <button class="preset-btn" data-w="1500" data-h="500">Twitter Header<span class="preset-dim">1500×500</span></button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="options-row">
+      <div class="checkerboard-preview"></div>
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="preserveAlpha" checked>
+          <span class="toggle-track"></span>
+        </label>
+        <div>
+          <span class="toggle-text">Preserve transparency</span><br>
+          <span class="toggle-sub">Off = fill with white, auto-convert PNG→JPG</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-process" id="processBtn" disabled>Squish!</button>
+  </div>
+
+  <div class="results hidden" id="results">
+    <div class="results-header">
+      <h3 id="resultsTitle">Processed</h3>
+      <div class="results-actions">
+        <button class="btn-download-all" id="downloadAllBtn">⬇ Download All (.zip)</button>
+        <button class="btn-clear" id="clearBtn">Clear</button>
+      </div>
+    </div>
+    <div class="image-grid" id="imageGrid"></div>
+  </div>
+</div>
+
+<div class="processing hidden" id="processing">
+  <div class="processing-inner">
+    <div class="spinner"></div>
+    <div style="font-size:18px" id="processText">Processing...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const dropzone = $('dropzone');
+const fileInput = $('fileInput');
+const quality = $('quality');
+const qualityVal = $('qualityVal');
+const resizeW = $('resizeW');
+const resizeH = $('resizeH');
+const lockBtn = $('lockBtn');
+const processBtn = $('processBtn');
+const results = $('results');
+const imageGrid = $('imageGrid');
+const processing = $('processing');
+const processText = $('processText');
+const progressFill = $('progressFill');
+const batchInfo = $('batchInfo');
+const downloadAllBtn = $('downloadAllBtn');
+const clearBtn = $('clearBtn');
+const resultsTitle = $('resultsTitle');
+const preserveAlpha = $('preserveAlpha');
+
+let files = [];
+let processedImages = [];
+let aspectLocked = true;
+let currentAspect = null;
+let selectedFormat = 'original';
+
+// Presets
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const w = btn.dataset.w;
+    const h = btn.dataset.h;
+    resizeW.value = w || '';
+    resizeH.value = h || '';
+    if (w && h) currentAspect = parseInt(w) / parseInt(h);
+  });
+});
+
+// Format
+document.querySelectorAll('.format-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedFormat = btn.dataset.fmt;
+  });
+});
+
+quality.addEventListener('input', () => qualityVal.textContent = quality.value + '%');
+
+lockBtn.addEventListener('click', () => {
+  aspectLocked = !aspectLocked;
+  lockBtn.classList.toggle('locked', aspectLocked);
+  lockBtn.textContent = aspectLocked ? '🔗' : '🔓';
+});
+
+resizeW.addEventListener('input', () => {
+  if (aspectLocked && currentAspect && resizeW.value)
+    resizeH.value = Math.round(parseInt(resizeW.value) / currentAspect);
+});
+
+resizeH.addEventListener('input', () => {
+  if (aspectLocked && currentAspect && resizeH.value)
+    resizeW.value = Math.round(parseInt(resizeH.value) * currentAspect);
+});
+
+// Drop zone
+dropzone.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+function addFiles(newFiles) {
+  const added = Array.from(newFiles).filter(f => f.type.startsWith('image/'));
+  files = [...files, ...added];
+  processBtn.disabled = files.length === 0;
+  batchInfo.innerHTML = files.length ? `<strong>${files.length}</strong> image${files.length !== 1 ? 's' : ''} queued` : '';
+
+  if (files.length > 0 && !currentAspect) {
+    const img = new Image();
+    const url = URL.createObjectURL(files[0]);
+    img.onload = () => { currentAspect = img.width / img.height; URL.revokeObjectURL(url); };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  }
+}
+
+// Process with batched concurrency
+processBtn.addEventListener('click', async () => {
+  if (files.length === 0) return;
+  processing.classList.remove('hidden');
+  progressFill.style.width = '0%';
+  processedImages = [];
+  let done = 0;
+
+  const BATCH = 4;
+  for (let i = 0; i < files.length; i += BATCH) {
+    const batch = files.slice(i, i + BATCH);
+    const batchResults = await Promise.all(batch.map(f => compressImage(f)));
+    for (const r of batchResults) {
+      if (r) processedImages.push(r);
+    }
+    done = Math.min(i + BATCH, files.length);
+    processText.textContent = `Processing ${done} / ${files.length}...`;
+    progressFill.style.width = ((done / files.length) * 100) + '%';
+    await new Promise(r => setTimeout(r, 10)); // yield to UI
+  }
+
+  processing.classList.add('hidden');
+  renderResults();
+});
+
+function compressImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    }, 30000);
+
+    img.onerror = () => {
+      clearTimeout(timeout);
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+
+    img.onload = () => {
+      clearTimeout(timeout);
+      URL.revokeObjectURL(url);
+
+      try {
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        const origAspect = w / h;
+
+        const rw = resizeW.value ? parseInt(resizeW.value) : 0;
+        const rh = resizeH.value ? parseInt(resizeH.value) : 0;
+
+        if (rw && rh) { w = rw; h = rh; }
+        else if (rw) { w = rw; h = Math.round(rw / origAspect); }
+        else if (rh) { h = rh; w = Math.round(rh * origAspect); }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        if (!preserveAlpha.checked) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+        }
+
+        ctx.drawImage(img, 0, 0, w, h);
+
+        let mime = selectedFormat === 'original' ? file.type : selectedFormat;
+        if (!mime || mime === 'image/gif') mime = 'image/png';
+        if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') {
+          mime = 'image/jpeg';
+        }
+
+        const q = parseFloat(quality.value) / 100;
+
+        canvas.toBlob(blob => {
+          if (!blob) { resolve(null); return; }
+          const ext = mime.split('/')[1].replace('jpeg', 'jpg');
+          const baseName = file.name.replace(/\.[^.]+$/, '');
+          resolve({
+            name: `${baseName}.${ext}`,
+            originalName: file.name,
+            blob,
+            url: URL.createObjectURL(blob),
+            width: w,
+            height: h,
+            originalSize: file.size,
+            newSize: blob.size,
+          });
+        }, mime, q);
+      } catch (e) {
+        resolve(null);
+      }
+    };
+
+    img.src = url;
+  });
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+
+function renderResults() {
+  results.classList.remove('hidden');
+  imageGrid.innerHTML = '';
+
+  if (processedImages.length === 0) {
+    resultsTitle.textContent = 'No images processed';
+    return;
+  }
+
+  let totalOrig = 0, totalNew = 0;
+
+  processedImages.forEach((img, i) => {
+    totalOrig += img.originalSize;
+    totalNew += img.newSize;
+    const saved = ((1 - img.newSize / img.originalSize) * 100).toFixed(1);
+    const bigger = img.newSize > img.originalSize;
+
+    const card = document.createElement('div');
+    card.className = 'image-card';
+    card.innerHTML = `
+      <div class="preview"><img src="${img.url}" alt="${img.name}" loading="lazy"></div>
+      <div class="info">
+        <div class="filename" title="${img.name}">${img.name}</div>
+        <div class="meta">
+          <span>${img.width}×${img.height}</span>
+          <span>${formatBytes(img.originalSize)} → ${formatBytes(img.newSize)}</span>
+        </div>
+        <div class="savings ${bigger ? 'bigger' : ''}">${bigger ? '⚠ +' + Math.abs(saved) + '% larger' : '✓ ' + saved + '% saved'}</div>
+        <div class="card-actions">
+          <button class="btn-sm download" data-idx="${i}">Download</button>
+          <button class="btn-sm remove" data-idx="${i}">✕</button>
+        </div>
+      </div>
+    `;
+    imageGrid.appendChild(card);
+  });
+
+  // Event delegation
+  imageGrid.onclick = e => {
+    const btn = e.target.closest('[data-idx]');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx);
+    if (btn.classList.contains('download')) downloadOne(idx);
+    if (btn.classList.contains('remove')) removeOne(idx);
+  };
+
+  const totalSaved = ((1 - totalNew / totalOrig) * 100).toFixed(1);
+  resultsTitle.textContent = `${processedImages.length} images — ${formatBytes(totalOrig)} → ${formatBytes(totalNew)} (${totalSaved}% saved)`;
+}
+
+function downloadOne(i) {
+  const img = processedImages[i];
+  if (!img) return;
+  const a = document.createElement('a');
+  a.href = img.url;
+  a.download = img.name;
+  a.click();
+}
+
+function removeOne(i) {
+  if (processedImages[i]) URL.revokeObjectURL(processedImages[i].url);
+  processedImages.splice(i, 1);
+  processedImages.length === 0 ? results.classList.add('hidden') : renderResults();
+}
+
+downloadAllBtn.addEventListener('click', async () => {
+  if (processedImages.length === 0) return;
+  if (processedImages.length === 1) return downloadOne(0);
+
+  const zip = new JSZip();
+  const names = {};
+  processedImages.forEach(img => {
+    let name = img.name;
+    if (names[name]) {
+      const base = name.replace(/\.[^.]+$/, '');
+      const ext = name.split('.').pop();
+      name = `${base}_${names[name]}.${ext}`;
+    }
+    names[img.name] = (names[img.name] || 0) + 1;
+    zip.file(name, img.blob);
+  });
+
+  const content = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = 'squished-images.zip';
+  a.click();
+});
+
+clearBtn.addEventListener('click', () => {
+  processedImages.forEach(img => URL.revokeObjectURL(img.url));
+  files = [];
+  processedImages = [];
+  results.classList.add('hidden');
+  imageGrid.innerHTML = '';
+  batchInfo.innerHTML = '';
+  processBtn.disabled = true;
+  currentAspect = null;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+});
+</script>
+</body>
+</html>
