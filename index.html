@@ -17,6 +17,7 @@
     --accent2: #ff9a6c;
     --green: #34d399;
     --red: #f87171;
+    --yellow: #fbbf24;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -64,15 +65,74 @@
     background: var(--surface);
   }
 
-  .dropzone:hover, .dropzone.dragover {
-    border-color: var(--accent);
-    background: rgba(255, 107, 53, 0.04);
-  }
-
+  .dropzone.has-files { padding: 24px; }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(255, 107, 53, 0.04); }
   .dropzone-icon { font-size: 56px; margin-bottom: 12px; opacity: 0.8; }
   .dropzone h2 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
   .dropzone p { color: var(--text2); font-size: 15px; }
   .dropzone input { display: none; }
+
+  /* File thumbnails strip */
+  .thumb-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .thumb-item {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .thumb-item:hover { border-color: var(--text2); }
+  .thumb-item.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,107,53,0.3); }
+  .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+
+  .thumb-item .thumb-remove {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 10px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .thumb-item:hover .thumb-remove { display: flex; }
+
+  .thumb-add {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    border: 2px dashed var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    font-size: 24px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .thumb-add:hover { border-color: var(--accent); color: var(--accent); }
 
   .panel {
     margin-top: 16px;
@@ -173,11 +233,7 @@
     flex-shrink: 0;
   }
 
-  .lock-btn.locked {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: rgba(255, 107, 53, 0.1);
-  }
+  .lock-btn.locked { color: var(--accent); border-color: var(--accent); background: rgba(255, 107, 53, 0.1); }
 
   .format-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -222,39 +278,21 @@
   .preset-btn.active .preset-dim { color: var(--accent2); }
 
   .options-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-
   .toggle-row { display: flex; align-items: center; gap: 12px; }
 
-  .toggle-switch {
-    position: relative;
-    width: 48px;
-    height: 28px;
-    flex-shrink: 0;
-    display: inline-block;
-  }
-
+  .toggle-switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; display: inline-block; }
   .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 
   .toggle-track {
-    position: absolute;
-    inset: 0;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
+    position: absolute; inset: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; cursor: pointer; transition: all 0.2s;
   }
 
   .toggle-track::after {
-    content: '';
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    left: 2px;
-    top: 2px;
-    background: var(--text2);
-    border-radius: 50%;
-    transition: all 0.2s;
+    content: ''; position: absolute;
+    width: 22px; height: 22px; left: 2px; top: 2px;
+    background: var(--text2); border-radius: 50%; transition: all 0.2s;
   }
 
   .toggle-switch input:checked + .toggle-track { background: rgba(255, 107, 53, 0.2); border-color: var(--accent); }
@@ -264,14 +302,195 @@
   .toggle-sub { font-size: 12px; color: var(--text2); }
 
   .checkerboard-preview {
-    width: 22px;
-    height: 22px;
-    border-radius: 4px;
+    width: 22px; height: 22px; border-radius: 4px;
     background-image: repeating-conic-gradient(#444 0% 25%, #666 0% 50%);
-    background-size: 8px 8px;
-    flex-shrink: 0;
+    background-size: 8px 8px; flex-shrink: 0;
   }
 
+  /* ====== LIVE PREVIEW ====== */
+  .preview-panel {
+    margin-top: 16px;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .preview-header h3 { font-size: 14px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+
+  .preview-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-value.original { color: var(--text2); }
+  .stat-value.compressed { color: var(--accent); }
+  .stat-value.saved { color: var(--green); }
+  .stat-value.bigger { color: var(--red); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  .stat-arrow { color: var(--text2); font-size: 18px; }
+
+  .preview-body {
+    position: relative;
+    min-height: 200px;
+    max-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background:
+      repeating-conic-gradient(var(--surface2) 0% 25%, var(--bg) 0% 50%)
+      50% / 20px 20px;
+  }
+
+  .preview-body img {
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* Comparison slider */
+  .comparison-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: ew-resize;
+    user-select: none;
+  }
+
+  .comparison-container .comp-original,
+  .comparison-container .comp-compressed {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .comparison-container .comp-original {
+    clip-path: inset(0 0 0 0);
+  }
+
+  .comp-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .comp-divider::after {
+    content: '⟨⟩';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -2px;
+  }
+
+  .comp-label {
+    position: absolute;
+    top: 12px;
+    padding: 4px 10px;
+    background: rgba(14,14,16,0.8);
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 6px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .comp-label.left { left: 12px; }
+  .comp-label.right { right: 12px; }
+
+  .preview-dims {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    background: rgba(14,14,16,0.8);
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .preview-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(14,14,16,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+
+  .preview-loading .mini-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--surface2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  /* Action bar */
   .action-bar { display: flex; gap: 10px; margin-top: 16px; }
 
   .btn-process {
@@ -291,44 +510,28 @@
   .btn-process:hover { background: var(--accent2); transform: translateY(-1px); }
   .btn-process:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
+  /* Results */
   .results { margin-top: 24px; }
 
   .results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    gap: 10px;
-    flex-wrap: wrap;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; gap: 10px; flex-wrap: wrap;
   }
 
   .results-header h3 { font-size: 16px; font-weight: 500; }
   .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .btn-download-all {
-    padding: 10px 20px;
-    background: var(--green);
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
+    padding: 10px 20px; background: var(--green); color: #000; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
   }
 
   .btn-download-all:hover { opacity: 0.85; }
 
   .btn-clear {
-    padding: 10px 20px;
-    background: transparent;
-    color: var(--text2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
+    padding: 10px 20px; background: transparent; color: var(--text2);
+    border: 1px solid var(--border); border-radius: 8px; font-size: 14px;
+    font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif;
   }
 
   .btn-clear:hover { border-color: var(--red); color: var(--red); }
@@ -340,44 +543,28 @@
   }
 
   .image-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-    transition: border-color 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; transition: border-color 0.2s;
   }
 
   .image-card:hover { border-color: var(--accent); }
 
-  .image-card .preview {
-    height: 180px;
-    overflow: hidden;
-    background: var(--surface2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .image-card .card-preview {
+    height: 180px; overflow: hidden; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
   }
 
-  .image-card .preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
+  .image-card .card-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
   .image-card .info { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
   .image-card .filename { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .image-card .meta { display: flex; gap: 12px; font-size: 12px; color: var(--text2); }
   .image-card .savings { font-size: 13px; font-weight: 700; color: var(--green); }
   .image-card .savings.bigger { color: var(--red); }
-
   .card-actions { display: flex; gap: 6px; }
 
   .btn-sm {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    border: none;
-    transition: all 0.15s;
+    flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; border: none; transition: all 0.15s;
   }
 
   .btn-sm.download { background: var(--accent); color: #fff; }
@@ -386,46 +573,24 @@
   .btn-sm.remove:hover { color: var(--red); }
 
   .processing {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: rgba(14, 14, 16, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(6px);
   }
 
   .processing-inner { text-align: center; padding: 24px; width: 90%; max-width: 400px; }
 
   .spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--surface2);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    margin: 0 auto 20px;
+    width: 48px; height: 48px;
+    border: 4px solid var(--surface2); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 20px;
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .progress-bar {
-    width: 100%;
-    height: 6px;
-    background: var(--surface2);
-    border-radius: 3px;
-    margin-top: 16px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 3px;
-    transition: width 0.15s ease;
-    width: 0%;
-  }
+  .progress-bar { width: 100%; height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.15s ease; width: 0%; }
 
   .hidden { display: none !important; }
 
@@ -435,6 +600,7 @@
     .logo span { font-size: 11px; margin-left: 6px; }
     .main { padding: 16px; }
     .dropzone { padding: 40px 16px; }
+    .dropzone.has-files { padding: 16px; }
     .dropzone-icon { font-size: 44px; }
     .dropzone h2 { font-size: 18px; }
     .dropzone p { font-size: 13px; }
@@ -447,11 +613,18 @@
     .results-header { flex-direction: column; align-items: flex-start; }
     .results-actions { width: 100%; }
     .btn-download-all, .btn-clear { flex: 1; text-align: center; }
+    .preview-stats { gap: 12px; }
+    .stat-value { font-size: 15px; }
+    .preview-body { max-height: 350px; }
+    .preview-body img, .comp-original, .comp-compressed { max-height: 350px !important; }
+    .thumb-item { width: 48px; height: 48px; }
+    .thumb-add { width: 48px; height: 48px; }
   }
 
   @media (max-width: 480px) {
     .presets-grid { gap: 4px; }
     .preset-btn { padding: 7px 8px; font-size: 11px; }
+    .preview-stats { gap: 8px; }
   }
 </style>
 </head>
@@ -463,13 +636,20 @@
 </div>
 
 <div class="main">
+  <!-- Drop zone -->
   <div class="dropzone" id="dropzone">
-    <div class="dropzone-icon">📦</div>
-    <h2>Drop images here</h2>
-    <p>or tap to browse — JPG, PNG, WebP, AVIF</p>
+    <div id="dropzoneEmpty">
+      <div class="dropzone-icon">📦</div>
+      <h2>Drop images here</h2>
+      <p>or tap to browse — JPG, PNG, WebP, AVIF</p>
+    </div>
+    <div id="dropzoneThumbs" class="hidden">
+      <div class="thumb-strip" id="thumbStrip"></div>
+    </div>
     <input type="file" id="fileInput" multiple accept="image/*">
   </div>
 
+  <!-- Controls -->
   <div class="panel">
     <div class="controls-grid">
       <div class="control-group">
@@ -500,6 +680,7 @@
     </div>
   </div>
 
+  <!-- Presets -->
   <div class="panel">
     <span class="panel-label">Dimension Presets</span>
     <div class="presets-grid">
@@ -518,6 +699,7 @@
     </div>
   </div>
 
+  <!-- Options -->
   <div class="panel">
     <div class="options-row">
       <div class="checkerboard-preview"></div>
@@ -534,10 +716,45 @@
     </div>
   </div>
 
-  <div class="action-bar">
-    <button class="btn-process" id="processBtn" disabled>Squish!</button>
+  <!-- Live Preview -->
+  <div class="preview-panel hidden" id="previewPanel">
+    <div class="preview-header">
+      <h3>Live Preview</h3>
+      <div class="preview-stats" id="previewStats">
+        <div class="stat">
+          <div class="stat-value original" id="prevOrigSize">—</div>
+          <div class="stat-label">Original</div>
+        </div>
+        <span class="stat-arrow">→</span>
+        <div class="stat">
+          <div class="stat-value compressed" id="prevNewSize">—</div>
+          <div class="stat-label">Estimated</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value saved" id="prevSaved">—</div>
+          <div class="stat-label">Savings</div>
+        </div>
+      </div>
+    </div>
+    <div class="preview-body" id="previewBody">
+      <div class="comparison-container" id="compContainer">
+        <img class="comp-compressed" id="compCompressed">
+        <img class="comp-original" id="compOriginal">
+        <div class="comp-divider" id="compDivider"></div>
+        <span class="comp-label left">Original</span>
+        <span class="comp-label right">Squished</span>
+      </div>
+      <div class="preview-dims" id="previewDims"></div>
+      <div class="preview-loading hidden" id="previewLoading"><div class="mini-spinner"></div></div>
+    </div>
   </div>
 
+  <!-- Process button -->
+  <div class="action-bar">
+    <button class="btn-process" id="processBtn" disabled>Squish All!</button>
+  </div>
+
+  <!-- Results -->
   <div class="results hidden" id="results">
     <div class="results-header">
       <h3 id="resultsTitle">Processed</h3>
@@ -550,6 +767,7 @@
   </div>
 </div>
 
+<!-- Processing overlay -->
 <div class="processing hidden" id="processing">
   <div class="processing-inner">
     <div class="spinner"></div>
@@ -561,7 +779,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+
+// Elements
 const dropzone = $('dropzone');
+const dropzoneEmpty = $('dropzoneEmpty');
+const dropzoneThumbs = $('dropzoneThumbs');
+const thumbStrip = $('thumbStrip');
 const fileInput = $('fileInput');
 const quality = $('quality');
 const qualityVal = $('qualityVal');
@@ -580,13 +803,52 @@ const clearBtn = $('clearBtn');
 const resultsTitle = $('resultsTitle');
 const preserveAlpha = $('preserveAlpha');
 
+// Preview elements
+const previewPanel = $('previewPanel');
+const previewBody = $('previewBody');
+const previewLoading = $('previewLoading');
+const previewDims = $('previewDims');
+const prevOrigSize = $('prevOrigSize');
+const prevNewSize = $('prevNewSize');
+const prevSaved = $('prevSaved');
+const compContainer = $('compContainer');
+const compOriginal = $('compOriginal');
+const compCompressed = $('compCompressed');
+const compDivider = $('compDivider');
+
+// State
 let files = [];
+let thumbUrls = [];
 let processedImages = [];
 let aspectLocked = true;
 let currentAspect = null;
 let selectedFormat = 'original';
+let previewIndex = 0;
+let previewTimer = null;
+let previewOrigUrl = null;
+let previewCompUrl = null;
+let compPosition = 50;
 
-// Presets
+// ---- Comparison slider ----
+let isDragging = false;
+
+function updateCompPosition(x) {
+  const rect = compContainer.getBoundingClientRect();
+  let pct = ((x - rect.left) / rect.width) * 100;
+  pct = Math.max(2, Math.min(98, pct));
+  compPosition = pct;
+  compDivider.style.left = pct + '%';
+  compOriginal.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+}
+
+compContainer.addEventListener('mousedown', e => { isDragging = true; updateCompPosition(e.clientX); });
+compContainer.addEventListener('touchstart', e => { isDragging = true; updateCompPosition(e.touches[0].clientX); }, { passive: true });
+window.addEventListener('mousemove', e => { if (isDragging) updateCompPosition(e.clientX); });
+window.addEventListener('touchmove', e => { if (isDragging) updateCompPosition(e.touches[0].clientX); }, { passive: true });
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('touchend', () => isDragging = false);
+
+// ---- Presets ----
 document.querySelectorAll('.preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
@@ -596,20 +858,27 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
     resizeW.value = w || '';
     resizeH.value = h || '';
     if (w && h) currentAspect = parseInt(w) / parseInt(h);
+    schedulePreview();
   });
 });
 
-// Format
+// ---- Format ----
 document.querySelectorAll('.format-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedFormat = btn.dataset.fmt;
+    schedulePreview();
   });
 });
 
-quality.addEventListener('input', () => qualityVal.textContent = quality.value + '%');
+// ---- Quality ----
+quality.addEventListener('input', () => {
+  qualityVal.textContent = quality.value + '%';
+  schedulePreview();
+});
 
+// ---- Aspect lock ----
 lockBtn.addEventListener('click', () => {
   aspectLocked = !aspectLocked;
   lockBtn.classList.toggle('locked', aspectLocked);
@@ -619,15 +888,23 @@ lockBtn.addEventListener('click', () => {
 resizeW.addEventListener('input', () => {
   if (aspectLocked && currentAspect && resizeW.value)
     resizeH.value = Math.round(parseInt(resizeW.value) / currentAspect);
+  schedulePreview();
 });
 
 resizeH.addEventListener('input', () => {
   if (aspectLocked && currentAspect && resizeH.value)
     resizeW.value = Math.round(parseInt(resizeH.value) * currentAspect);
+  schedulePreview();
 });
 
-// Drop zone
-dropzone.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+preserveAlpha.addEventListener('change', () => schedulePreview());
+
+// ---- Drop zone ----
+dropzone.addEventListener('click', e => {
+  if (e.target.closest('.thumb-remove')) return;
+  e.stopPropagation();
+  fileInput.click();
+});
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
 dropzone.addEventListener('drop', e => {
@@ -640,20 +917,199 @@ fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInpu
 
 function addFiles(newFiles) {
   const added = Array.from(newFiles).filter(f => f.type.startsWith('image/'));
+  const startIdx = files.length;
   files = [...files, ...added];
+
+  // Create thumb URLs
+  added.forEach(f => thumbUrls.push(URL.createObjectURL(f)));
+
   processBtn.disabled = files.length === 0;
   batchInfo.innerHTML = files.length ? `<strong>${files.length}</strong> image${files.length !== 1 ? 's' : ''} queued` : '';
 
   if (files.length > 0 && !currentAspect) {
     const img = new Image();
     const url = URL.createObjectURL(files[0]);
-    img.onload = () => { currentAspect = img.width / img.height; URL.revokeObjectURL(url); };
+    img.onload = () => {
+      currentAspect = img.width / img.height;
+      URL.revokeObjectURL(url);
+    };
     img.onerror = () => URL.revokeObjectURL(url);
     img.src = url;
   }
+
+  renderThumbs();
+  if (startIdx === 0) { previewIndex = 0; }
+  schedulePreview();
 }
 
-// Process with batched concurrency
+function removeFile(idx) {
+  URL.revokeObjectURL(thumbUrls[idx]);
+  files.splice(idx, 1);
+  thumbUrls.splice(idx, 1);
+
+  processBtn.disabled = files.length === 0;
+  batchInfo.innerHTML = files.length ? `<strong>${files.length}</strong> image${files.length !== 1 ? 's' : ''} queued` : '';
+
+  if (files.length === 0) {
+    previewPanel.classList.add('hidden');
+    dropzoneEmpty.classList.remove('hidden');
+    dropzoneThumbs.classList.add('hidden');
+    dropzone.classList.remove('has-files');
+    currentAspect = null;
+  } else {
+    if (previewIndex >= files.length) previewIndex = files.length - 1;
+    renderThumbs();
+    schedulePreview();
+  }
+}
+
+function renderThumbs() {
+  if (files.length === 0) {
+    dropzoneEmpty.classList.remove('hidden');
+    dropzoneThumbs.classList.add('hidden');
+    dropzone.classList.remove('has-files');
+    return;
+  }
+
+  dropzoneEmpty.classList.add('hidden');
+  dropzoneThumbs.classList.remove('hidden');
+  dropzone.classList.add('has-files');
+
+  thumbStrip.innerHTML = '';
+  files.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'thumb-item' + (i === previewIndex ? ' active' : '');
+    el.innerHTML = `<img src="${thumbUrls[i]}" alt="${f.name}"><button class="thumb-remove" data-ri="${i}">✕</button>`;
+    el.addEventListener('click', e => {
+      if (e.target.closest('.thumb-remove')) {
+        e.stopPropagation();
+        removeFile(parseInt(e.target.dataset.ri));
+        return;
+      }
+      previewIndex = i;
+      renderThumbs();
+      schedulePreview();
+    });
+    thumbStrip.appendChild(el);
+  });
+
+  // Add more button
+  const addBtn = document.createElement('div');
+  addBtn.className = 'thumb-add';
+  addBtn.textContent = '+';
+  addBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+  thumbStrip.appendChild(addBtn);
+}
+
+// ---- Live Preview ----
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(generatePreview, 150);
+}
+
+function generatePreview() {
+  if (files.length === 0) {
+    previewPanel.classList.add('hidden');
+    return;
+  }
+
+  const file = files[previewIndex];
+  if (!file) return;
+
+  previewPanel.classList.remove('hidden');
+  previewLoading.classList.remove('hidden');
+
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    previewLoading.classList.add('hidden');
+  };
+
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+
+    let w = img.naturalWidth;
+    let h = img.naturalHeight;
+    const origAspect = w / h;
+
+    const rw = resizeW.value ? parseInt(resizeW.value) : 0;
+    const rh = resizeH.value ? parseInt(resizeH.value) : 0;
+
+    if (rw && rh) { w = rw; h = rh; }
+    else if (rw) { w = rw; h = Math.round(rw / origAspect); }
+    else if (rh) { h = rh; w = Math.round(rh * origAspect); }
+
+    // Cap preview canvas for performance (preview only, full res on actual process)
+    const MAX_PREV = 2000;
+    let pw = w, ph = h;
+    if (pw > MAX_PREV || ph > MAX_PREV) {
+      const scale = MAX_PREV / Math.max(pw, ph);
+      pw = Math.round(pw * scale);
+      ph = Math.round(ph * scale);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (!preserveAlpha.checked) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pw, ph);
+    }
+
+    ctx.drawImage(img, 0, 0, pw, ph);
+
+    let mime = selectedFormat === 'original' ? file.type : selectedFormat;
+    if (!mime || mime === 'image/gif') mime = 'image/png';
+    if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') {
+      mime = 'image/jpeg';
+    }
+
+    const q = parseFloat(quality.value) / 100;
+
+    canvas.toBlob(blob => {
+      if (!blob) {
+        previewLoading.classList.add('hidden');
+        return;
+      }
+
+      // Clean up old URLs
+      if (previewOrigUrl) URL.revokeObjectURL(previewOrigUrl);
+      if (previewCompUrl) URL.revokeObjectURL(previewCompUrl);
+
+      previewOrigUrl = URL.createObjectURL(file);
+      previewCompUrl = URL.createObjectURL(blob);
+
+      compOriginal.src = previewOrigUrl;
+      compCompressed.src = previewCompUrl;
+
+      // Update stats
+      prevOrigSize.textContent = formatBytes(file.size);
+      prevNewSize.textContent = formatBytes(blob.size);
+
+      const pct = ((1 - blob.size / file.size) * 100).toFixed(1);
+      const isBigger = blob.size > file.size;
+      prevSaved.textContent = isBigger ? `+${Math.abs(pct)}%` : `-${pct}%`;
+      prevSaved.className = 'stat-value ' + (isBigger ? 'bigger' : 'saved');
+
+      previewDims.textContent = `${img.naturalWidth}×${img.naturalHeight} → ${w}×${h}`;
+
+      // Reset comparison
+      updateCompPosition(compContainer.getBoundingClientRect().left + compContainer.getBoundingClientRect().width * compPosition / 100);
+
+      previewLoading.classList.add('hidden');
+    }, mime, q);
+  };
+
+  img.src = url;
+}
+
+// ---- Process All ----
 processBtn.addEventListener('click', async () => {
   if (files.length === 0) return;
   processing.classList.remove('hidden');
@@ -665,13 +1121,11 @@ processBtn.addEventListener('click', async () => {
   for (let i = 0; i < files.length; i += BATCH) {
     const batch = files.slice(i, i + BATCH);
     const batchResults = await Promise.all(batch.map(f => compressImage(f)));
-    for (const r of batchResults) {
-      if (r) processedImages.push(r);
-    }
+    for (const r of batchResults) { if (r) processedImages.push(r); }
     done = Math.min(i + BATCH, files.length);
     processText.textContent = `Processing ${done} / ${files.length}...`;
     progressFill.style.width = ((done / files.length) * 100) + '%';
-    await new Promise(r => setTimeout(r, 10)); // yield to UI
+    await new Promise(r => setTimeout(r, 10));
   }
 
   processing.classList.add('hidden');
@@ -683,26 +1137,17 @@ function compressImage(file) {
     const img = new Image();
     const url = URL.createObjectURL(file);
 
-    const timeout = setTimeout(() => {
-      URL.revokeObjectURL(url);
-      resolve(null);
-    }, 30000);
+    const timeout = setTimeout(() => { URL.revokeObjectURL(url); resolve(null); }, 30000);
 
-    img.onerror = () => {
-      clearTimeout(timeout);
-      URL.revokeObjectURL(url);
-      resolve(null);
-    };
+    img.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(url); resolve(null); };
 
     img.onload = () => {
       clearTimeout(timeout);
       URL.revokeObjectURL(url);
 
       try {
-        let w = img.naturalWidth;
-        let h = img.naturalHeight;
+        let w = img.naturalWidth, h = img.naturalHeight;
         const origAspect = w / h;
-
         const rw = resizeW.value ? parseInt(resizeW.value) : 0;
         const rh = resizeH.value ? parseInt(resizeH.value) : 0;
 
@@ -711,45 +1156,29 @@ function compressImage(file) {
         else if (rh) { h = rh; w = Math.round(rh * origAspect); }
 
         const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
+        canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        if (!preserveAlpha.checked) {
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, w, h);
-        }
-
+        if (!preserveAlpha.checked) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
         ctx.drawImage(img, 0, 0, w, h);
 
         let mime = selectedFormat === 'original' ? file.type : selectedFormat;
         if (!mime || mime === 'image/gif') mime = 'image/png';
-        if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') {
-          mime = 'image/jpeg';
-        }
-
-        const q = parseFloat(quality.value) / 100;
+        if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') mime = 'image/jpeg';
 
         canvas.toBlob(blob => {
           if (!blob) { resolve(null); return; }
           const ext = mime.split('/')[1].replace('jpeg', 'jpg');
           const baseName = file.name.replace(/\.[^.]+$/, '');
           resolve({
-            name: `${baseName}.${ext}`,
-            originalName: file.name,
-            blob,
-            url: URL.createObjectURL(blob),
-            width: w,
-            height: h,
-            originalSize: file.size,
-            newSize: blob.size,
+            name: `${baseName}.${ext}`, originalName: file.name, blob,
+            url: URL.createObjectURL(blob), width: w, height: h,
+            originalSize: file.size, newSize: blob.size,
           });
-        }, mime, q);
-      } catch (e) {
-        resolve(null);
-      }
+        }, mime, parseFloat(quality.value) / 100);
+      } catch (e) { resolve(null); }
     };
 
     img.src = url;
@@ -766,10 +1195,7 @@ function renderResults() {
   results.classList.remove('hidden');
   imageGrid.innerHTML = '';
 
-  if (processedImages.length === 0) {
-    resultsTitle.textContent = 'No images processed';
-    return;
-  }
+  if (processedImages.length === 0) { resultsTitle.textContent = 'No images processed'; return; }
 
   let totalOrig = 0, totalNew = 0;
 
@@ -782,7 +1208,7 @@ function renderResults() {
     const card = document.createElement('div');
     card.className = 'image-card';
     card.innerHTML = `
-      <div class="preview"><img src="${img.url}" alt="${img.name}" loading="lazy"></div>
+      <div class="card-preview"><img src="${img.url}" alt="${img.name}" loading="lazy"></div>
       <div class="info">
         <div class="filename" title="${img.name}">${img.name}</div>
         <div class="meta">
@@ -794,12 +1220,10 @@ function renderResults() {
           <button class="btn-sm download" data-idx="${i}">Download</button>
           <button class="btn-sm remove" data-idx="${i}">✕</button>
         </div>
-      </div>
-    `;
+      </div>`;
     imageGrid.appendChild(card);
   });
 
-  // Event delegation
   imageGrid.onclick = e => {
     const btn = e.target.closest('[data-idx]');
     if (!btn) return;
@@ -816,9 +1240,7 @@ function downloadOne(i) {
   const img = processedImages[i];
   if (!img) return;
   const a = document.createElement('a');
-  a.href = img.url;
-  a.download = img.name;
-  a.click();
+  a.href = img.url; a.download = img.name; a.click();
 }
 
 function removeOne(i) {
@@ -843,23 +1265,28 @@ downloadAllBtn.addEventListener('click', async () => {
     names[img.name] = (names[img.name] || 0) + 1;
     zip.file(name, img.blob);
   });
-
   const content = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(content);
-  a.download = 'squished-images.zip';
-  a.click();
+  a.href = URL.createObjectURL(content); a.download = 'squished-images.zip'; a.click();
 });
 
 clearBtn.addEventListener('click', () => {
   processedImages.forEach(img => URL.revokeObjectURL(img.url));
-  files = [];
-  processedImages = [];
+  thumbUrls.forEach(u => URL.revokeObjectURL(u));
+  if (previewOrigUrl) URL.revokeObjectURL(previewOrigUrl);
+  if (previewCompUrl) URL.revokeObjectURL(previewCompUrl);
+  files = []; thumbUrls = []; processedImages = [];
+  previewOrigUrl = null; previewCompUrl = null;
   results.classList.add('hidden');
+  previewPanel.classList.add('hidden');
   imageGrid.innerHTML = '';
   batchInfo.innerHTML = '';
   processBtn.disabled = true;
   currentAspect = null;
+  dropzoneEmpty.classList.remove('hidden');
+  dropzoneThumbs.classList.add('hidden');
+  dropzone.classList.remove('has-files');
+  thumbStrip.innerHTML = '';
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
 });
 </script>
