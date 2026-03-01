@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Squish — Image Compressor & Resizer</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
-  :root {
+  /* ===== THEME VARIABLES ===== */
+  [data-theme="dark"] {
     --bg: #0e0e10;
     --surface: #18181c;
     --surface2: #222228;
@@ -17,7 +18,29 @@
     --accent2: #ff9a6c;
     --green: #34d399;
     --red: #f87171;
-    --yellow: #fbbf24;
+    --checker1: #222228;
+    --checker2: #0e0e10;
+    --overlay: rgba(14, 14, 16, 0.9);
+    --label-bg: rgba(14,14,16,0.8);
+    --thumb-border: #0e0e10;
+  }
+
+  [data-theme="light"] {
+    --bg: #f4f4f6;
+    --surface: #ffffff;
+    --surface2: #eeeef0;
+    --border: #d4d4da;
+    --text: #1a1a1e;
+    --text2: #6e6e82;
+    --accent: #e85d2a;
+    --accent2: #ff8a5c;
+    --green: #16a34a;
+    --red: #dc2626;
+    --checker1: #e0e0e4;
+    --checker2: #f4f4f6;
+    --overlay: rgba(255, 255, 255, 0.92);
+    --label-bg: rgba(255,255,255,0.85);
+    --thumb-border: #ffffff;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,6 +52,7 @@
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
   }
 
   .header {
@@ -40,6 +64,8 @@
     gap: 12px;
   }
 
+  .header-left { display: flex; align-items: center; gap: 16px; }
+
   .logo {
     font-family: 'Space Mono', monospace;
     font-size: 24px;
@@ -50,8 +76,29 @@
 
   .logo span { color: var(--text2); font-size: 13px; margin-left: 10px; letter-spacing: 0; font-family: 'DM Sans', sans-serif; }
 
+  .header-right { display: flex; align-items: center; gap: 14px; }
+
   .batch-info { font-size: 14px; color: var(--text2); white-space: nowrap; }
   .batch-info strong { color: var(--text); }
+
+  /* Theme toggle */
+  .theme-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 
@@ -65,32 +112,19 @@
     background: var(--surface);
   }
 
-  .dropzone.has-files { padding: 24px; }
+  .dropzone.has-files { padding: 20px; }
   .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(255, 107, 53, 0.04); }
   .dropzone-icon { font-size: 56px; margin-bottom: 12px; opacity: 0.8; }
   .dropzone h2 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
   .dropzone p { color: var(--text2); font-size: 15px; }
   .dropzone input { display: none; }
 
-  /* File thumbnails strip */
-  .thumb-strip {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 12px;
-  }
+  .thumb-strip { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
   .thumb-item {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 2px solid var(--border);
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-    flex-shrink: 0;
+    width: 56px; height: 56px; border-radius: 8px; overflow: hidden;
+    border: 2px solid var(--border); cursor: pointer; transition: all 0.15s;
+    position: relative; flex-shrink: 0;
   }
 
   .thumb-item:hover { border-color: var(--text2); }
@@ -98,87 +132,43 @@
   .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
 
   .thumb-item .thumb-remove {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 18px;
-    height: 18px;
-    background: var(--red);
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    font-size: 10px;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
+    position: absolute; top: -2px; right: -2px; width: 18px; height: 18px;
+    background: var(--red); color: #fff; border: none; border-radius: 50%;
+    font-size: 10px; cursor: pointer; display: none; align-items: center;
+    justify-content: center; line-height: 1;
   }
 
   .thumb-item:hover .thumb-remove { display: flex; }
 
   .thumb-add {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
-    border: 2px dashed var(--border);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text2);
-    font-size: 24px;
-    transition: all 0.15s;
-    flex-shrink: 0;
+    width: 56px; height: 56px; border-radius: 8px; border: 2px dashed var(--border);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text2); font-size: 24px; transition: all 0.15s; flex-shrink: 0;
   }
 
   .thumb-add:hover { border-color: var(--accent); color: var(--accent); }
 
   .panel {
-    margin-top: 16px;
-    padding: 20px;
-    background: var(--surface);
-    border-radius: 16px;
-    border: 1px solid var(--border);
+    margin-top: 16px; padding: 20px; background: var(--surface);
+    border-radius: 16px; border: 1px solid var(--border); transition: background 0.3s, border-color 0.3s;
   }
 
   .panel-label {
-    display: block;
-    font-size: 12px;
-    color: var(--text2);
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
+    display: block; font-size: 12px; color: var(--text2); margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
   }
 
-  .controls-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px;
-    align-items: end;
-  }
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: end; }
 
   .control-group label {
-    display: block;
-    font-size: 12px;
-    color: var(--text2);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
+    display: block; font-size: 12px; color: var(--text2); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
   }
 
   .control-group input[type="number"] {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 16px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
+    width: 100%; padding: 12px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; color: var(--text);
+    font-size: 16px; font-family: 'DM Sans', sans-serif; outline: none;
     transition: border-color 0.2s;
   }
 
@@ -187,50 +177,33 @@
   .slider-wrap { display: flex; align-items: center; gap: 12px; }
 
   .slider-wrap input[type="range"] {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 8px;
-    background: var(--surface2);
-    border-radius: 4px;
-    outline: none;
+    flex: 1; -webkit-appearance: none; height: 8px;
+    background: var(--surface2); border-radius: 4px; outline: none;
   }
 
   .slider-wrap input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    border: 3px solid var(--bg);
+    -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 3px solid var(--thumb-border);
   }
 
-  .slider-val {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--accent);
-    min-width: 48px;
-    text-align: right;
-  }
+  .slider-val { font-size: 20px; font-weight: 700; color: var(--accent); min-width: 48px; text-align: right; }
 
   .size-row { display: flex; gap: 8px; align-items: center; }
   .size-row input { width: 100%; }
   .size-row .x { color: var(--text2); font-size: 18px; font-weight: 700; flex-shrink: 0; }
 
+  .orig-dims {
+    font-size: 11px; color: var(--text2); margin-top: 6px;
+  }
+
+  .orig-dims strong { color: var(--accent); cursor: pointer; }
+  .orig-dims strong:hover { text-decoration: underline; }
+
   .lock-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text2);
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    flex-shrink: 0;
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    width: 44px; height: 44px; border-radius: 8px; cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
   }
 
   .lock-btn.locked { color: var(--accent); border-color: var(--accent); background: rgba(255, 107, 53, 0.1); }
@@ -238,19 +211,10 @@
   .format-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
   .format-btn {
-    flex: 1;
-    min-width: 60px;
-    padding: 12px 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text2);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-    text-align: center;
+    flex: 1; min-width: 60px; padding: 12px 8px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; color: var(--text2);
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s; text-align: center;
   }
 
   .format-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255, 107, 53, 0.08); }
@@ -259,17 +223,9 @@
   .presets-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 
   .preset-btn {
-    padding: 10px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text2);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-    white-space: nowrap;
+    padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text2); font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; white-space: nowrap;
   }
 
   .preset-btn:hover { border-color: var(--text2); color: var(--text); }
@@ -284,14 +240,12 @@
   .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 
   .toggle-track {
-    position: absolute; inset: 0;
-    background: var(--surface2); border: 1px solid var(--border);
+    position: absolute; inset: 0; background: var(--surface2); border: 1px solid var(--border);
     border-radius: 14px; cursor: pointer; transition: all 0.2s;
   }
 
   .toggle-track::after {
-    content: ''; position: absolute;
-    width: 22px; height: 22px; left: 2px; top: 2px;
+    content: ''; position: absolute; width: 22px; height: 22px; left: 2px; top: 2px;
     background: var(--text2); border-radius: 50%; transition: all 0.2s;
   }
 
@@ -309,208 +263,103 @@
 
   /* ====== LIVE PREVIEW ====== */
   .preview-panel {
-    margin-top: 16px;
-    background: var(--surface);
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    overflow: hidden;
+    margin-top: 16px; background: var(--surface); border-radius: 16px;
+    border: 1px solid var(--border); overflow: hidden; transition: background 0.3s, border-color 0.3s;
   }
 
   .preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-    gap: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;
   }
 
   .preview-header h3 { font-size: 14px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
 
-  .preview-stats {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+  .preview-stats { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 
-  .stat {
-    text-align: center;
-  }
-
-  .stat-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text);
-  }
-
+  .stat { text-align: center; }
+  .stat-value { font-size: 18px; font-weight: 700; color: var(--text); }
   .stat-value.original { color: var(--text2); }
   .stat-value.compressed { color: var(--accent); }
   .stat-value.saved { color: var(--green); }
   .stat-value.bigger { color: var(--red); }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 2px;
-  }
-
+  .stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
   .stat-arrow { color: var(--text2); font-size: 18px; }
 
   .preview-body {
-    position: relative;
-    min-height: 200px;
-    max-height: 500px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background:
-      repeating-conic-gradient(var(--surface2) 0% 25%, var(--bg) 0% 50%)
-      50% / 20px 20px;
+    position: relative; height: 400px; overflow: hidden;
+    background: repeating-conic-gradient(var(--checker1) 0% 25%, var(--checker2) 0% 50%) 50% / 20px 20px;
   }
 
-  .preview-body img {
-    max-width: 100%;
-    max-height: 500px;
-    object-fit: contain;
+  .comparison-container {
+    position: relative; width: 100%; height: 100%; overflow: hidden;
+    cursor: ew-resize; user-select: none;
+  }
+
+  .comp-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .comp-layer img {
+    max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none;
     display: block;
   }
 
-  /* Comparison slider */
-  .comparison-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    cursor: ew-resize;
-    user-select: none;
-  }
-
-  .comparison-container .comp-original,
-  .comparison-container .comp-compressed {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 100%;
-    max-height: 500px;
-    object-fit: contain;
-    pointer-events: none;
-  }
-
-  .comparison-container .comp-original {
-    clip-path: inset(0 0 0 0);
-  }
+  .comp-clip { overflow: hidden; }
 
   .comp-divider {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    z-index: 10;
-    pointer-events: none;
+    position: absolute; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); z-index: 10; pointer-events: none;
+    left: 50%;
   }
 
   .comp-divider::after {
-    content: '⟨⟩';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 36px;
-    height: 36px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: -2px;
+    content: '◀▶'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 36px; height: 36px;
+    background: var(--accent); color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; letter-spacing: -1px;
   }
 
   .comp-label {
-    position: absolute;
-    top: 12px;
-    padding: 4px 10px;
-    background: rgba(14,14,16,0.8);
-    color: var(--text2);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-radius: 6px;
-    z-index: 10;
-    pointer-events: none;
+    position: absolute; top: 12px; padding: 4px 10px;
+    background: var(--label-bg); color: var(--text2); font-size: 11px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+    border-radius: 6px; z-index: 10; pointer-events: none;
+    backdrop-filter: blur(4px);
   }
 
   .comp-label.left { left: 12px; }
   .comp-label.right { right: 12px; }
 
   .preview-dims {
-    position: absolute;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 4px 12px;
-    background: rgba(14,14,16,0.8);
-    color: var(--text2);
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 6px;
-    z-index: 10;
-    pointer-events: none;
-    white-space: nowrap;
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    padding: 4px 12px; background: var(--label-bg); color: var(--text2);
+    font-size: 12px; font-weight: 500; border-radius: 6px; z-index: 10;
+    pointer-events: none; white-space: nowrap; backdrop-filter: blur(4px);
   }
 
   .preview-loading {
-    position: absolute;
-    inset: 0;
-    background: rgba(14,14,16,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
+    position: absolute; inset: 0; background: var(--overlay);
+    display: flex; align-items: center; justify-content: center; z-index: 20;
   }
 
   .preview-loading .mini-spinner {
-    width: 28px; height: 28px;
-    border: 3px solid var(--surface2);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+    width: 28px; height: 28px; border: 3px solid var(--surface2);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite;
   }
 
-  /* Action bar */
   .action-bar { display: flex; gap: 10px; margin-top: 16px; }
 
   .btn-process {
-    flex: 1;
-    padding: 16px 36px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
+    flex: 1; padding: 16px 36px; background: var(--accent); color: #fff;
+    border: none; border-radius: 12px; font-size: 18px; font-weight: 700;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
   }
 
   .btn-process:hover { background: var(--accent2); transform: translateY(-1px); }
   .btn-process:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-  /* Results */
   .results { margin-top: 24px; }
 
   .results-header {
@@ -522,7 +371,7 @@
   .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .btn-download-all {
-    padding: 10px 20px; background: var(--green); color: #000; border: none;
+    padding: 10px 20px; background: var(--green); color: #fff; border: none;
     border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
   }
 
@@ -536,11 +385,7 @@
 
   .btn-clear:hover { border-color: var(--red); color: var(--red); }
 
-  .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px;
-  }
+  .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 
   .image-card {
     background: var(--surface); border: 1px solid var(--border);
@@ -573,8 +418,7 @@
   .btn-sm.remove:hover { color: var(--red); }
 
   .processing {
-    position: fixed; inset: 0;
-    background: rgba(14, 14, 16, 0.9);
+    position: fixed; inset: 0; background: var(--overlay);
     display: flex; align-items: center; justify-content: center;
     z-index: 100; backdrop-filter: blur(6px);
   }
@@ -582,9 +426,9 @@
   .processing-inner { text-align: center; padding: 24px; width: 90%; max-width: 400px; }
 
   .spinner {
-    width: 48px; height: 48px;
-    border: 4px solid var(--surface2); border-top-color: var(--accent);
-    border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 20px;
+    width: 48px; height: 48px; border: 4px solid var(--surface2);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.7s linear infinite; margin: 0 auto 20px;
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -595,7 +439,7 @@
   .hidden { display: none !important; }
 
   @media (max-width: 768px) {
-    .header { padding: 16px; }
+    .header { padding: 16px; flex-wrap: wrap; }
     .logo { font-size: 20px; }
     .logo span { font-size: 11px; margin-left: 6px; }
     .main { padding: 16px; }
@@ -613,10 +457,9 @@
     .results-header { flex-direction: column; align-items: flex-start; }
     .results-actions { width: 100%; }
     .btn-download-all, .btn-clear { flex: 1; text-align: center; }
-    .preview-stats { gap: 12px; }
+    .preview-stats { gap: 10px; }
     .stat-value { font-size: 15px; }
-    .preview-body { max-height: 350px; }
-    .preview-body img, .comp-original, .comp-compressed { max-height: 350px !important; }
+    .preview-body { height: 300px; }
     .thumb-item { width: 48px; height: 48px; }
     .thumb-add { width: 48px; height: 48px; }
   }
@@ -624,19 +467,23 @@
   @media (max-width: 480px) {
     .presets-grid { gap: 4px; }
     .preset-btn { padding: 7px 8px; font-size: 11px; }
-    .preview-stats { gap: 8px; }
+    .preview-body { height: 250px; }
   }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo">SQUISH <span>compress & resize</span></div>
-  <div class="batch-info" id="batchInfo"></div>
+  <div class="header-left">
+    <div class="logo">SQUISH <span>compress & resize</span></div>
+  </div>
+  <div class="header-right">
+    <div class="batch-info" id="batchInfo"></div>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
 </div>
 
 <div class="main">
-  <!-- Drop zone -->
   <div class="dropzone" id="dropzone">
     <div id="dropzoneEmpty">
       <div class="dropzone-icon">📦</div>
@@ -649,7 +496,6 @@
     <input type="file" id="fileInput" multiple accept="image/*">
   </div>
 
-  <!-- Controls -->
   <div class="panel">
     <div class="controls-grid">
       <div class="control-group">
@@ -667,6 +513,7 @@
           <input type="number" id="resizeH" placeholder="H" min="1" inputmode="numeric">
           <button class="lock-btn locked" id="lockBtn" title="Lock aspect ratio">🔗</button>
         </div>
+        <div class="orig-dims" id="origDims"></div>
       </div>
       <div class="control-group">
         <label>Output Format</label>
@@ -680,7 +527,6 @@
     </div>
   </div>
 
-  <!-- Presets -->
   <div class="panel">
     <span class="panel-label">Dimension Presets</span>
     <div class="presets-grid">
@@ -699,7 +545,6 @@
     </div>
   </div>
 
-  <!-- Options -->
   <div class="panel">
     <div class="options-row">
       <div class="checkerboard-preview"></div>
@@ -738,9 +583,15 @@
     </div>
     <div class="preview-body" id="previewBody">
       <div class="comparison-container" id="compContainer">
-        <img class="comp-compressed" id="compCompressed">
-        <img class="comp-original" id="compOriginal">
-        <div class="comp-divider" id="compDivider"></div>
+        <!-- Bottom layer: compressed -->
+        <div class="comp-layer" id="layerComp">
+          <img id="compCompressed">
+        </div>
+        <!-- Top layer: original, clipped -->
+        <div class="comp-layer comp-clip" id="layerOrig" style="clip-path: inset(0 50% 0 0);">
+          <img id="compOriginal">
+        </div>
+        <div class="comp-divider" id="compDivider" style="left:50%;"></div>
         <span class="comp-label left">Original</span>
         <span class="comp-label right">Squished</span>
       </div>
@@ -749,12 +600,10 @@
     </div>
   </div>
 
-  <!-- Process button -->
   <div class="action-bar">
     <button class="btn-process" id="processBtn" disabled>Squish All!</button>
   </div>
 
-  <!-- Results -->
   <div class="results hidden" id="results">
     <div class="results-header">
       <h3 id="resultsTitle">Processed</h3>
@@ -767,7 +616,6 @@
   </div>
 </div>
 
-<!-- Processing overlay -->
 <div class="processing hidden" id="processing">
   <div class="processing-inner">
     <div class="spinner"></div>
@@ -780,89 +628,96 @@
 <script>
 const $ = id => document.getElementById(id);
 
-// Elements
-const dropzone = $('dropzone');
-const dropzoneEmpty = $('dropzoneEmpty');
-const dropzoneThumbs = $('dropzoneThumbs');
-const thumbStrip = $('thumbStrip');
-const fileInput = $('fileInput');
-const quality = $('quality');
-const qualityVal = $('qualityVal');
-const resizeW = $('resizeW');
-const resizeH = $('resizeH');
-const lockBtn = $('lockBtn');
-const processBtn = $('processBtn');
-const results = $('results');
-const imageGrid = $('imageGrid');
-const processing = $('processing');
-const processText = $('processText');
-const progressFill = $('progressFill');
-const batchInfo = $('batchInfo');
-const downloadAllBtn = $('downloadAllBtn');
-const clearBtn = $('clearBtn');
-const resultsTitle = $('resultsTitle');
-const preserveAlpha = $('preserveAlpha');
+const dropzone = $('dropzone'), dropzoneEmpty = $('dropzoneEmpty'), dropzoneThumbs = $('dropzoneThumbs');
+const thumbStrip = $('thumbStrip'), fileInput = $('fileInput');
+const quality = $('quality'), qualityVal = $('qualityVal');
+const resizeW = $('resizeW'), resizeH = $('resizeH'), lockBtn = $('lockBtn');
+const origDims = $('origDims');
+const processBtn = $('processBtn'), results = $('results'), imageGrid = $('imageGrid');
+const processing = $('processing'), processText = $('processText'), progressFill = $('progressFill');
+const batchInfo = $('batchInfo'), downloadAllBtn = $('downloadAllBtn');
+const clearBtn = $('clearBtn'), resultsTitle = $('resultsTitle');
+const preserveAlpha = $('preserveAlpha'), themeBtn = $('themeBtn');
 
-// Preview elements
-const previewPanel = $('previewPanel');
-const previewBody = $('previewBody');
-const previewLoading = $('previewLoading');
+const previewPanel = $('previewPanel'), previewLoading = $('previewLoading');
 const previewDims = $('previewDims');
-const prevOrigSize = $('prevOrigSize');
-const prevNewSize = $('prevNewSize');
-const prevSaved = $('prevSaved');
-const compContainer = $('compContainer');
-const compOriginal = $('compOriginal');
-const compCompressed = $('compCompressed');
-const compDivider = $('compDivider');
+const prevOrigSize = $('prevOrigSize'), prevNewSize = $('prevNewSize'), prevSaved = $('prevSaved');
+const compContainer = $('compContainer'), compOriginal = $('compOriginal');
+const compCompressed = $('compCompressed'), compDivider = $('compDivider');
+const layerOrig = $('layerOrig');
 
-// State
-let files = [];
-let thumbUrls = [];
-let processedImages = [];
-let aspectLocked = true;
-let currentAspect = null;
-let selectedFormat = 'original';
-let previewIndex = 0;
-let previewTimer = null;
-let previewOrigUrl = null;
-let previewCompUrl = null;
-let compPosition = 50;
+let files = [], thumbUrls = [], processedImages = [];
+let aspectLocked = true, currentAspect = null, selectedFormat = 'original';
+let previewIndex = 0, previewTimer = null;
+let previewOrigUrl = null, previewCompUrl = null;
+// Store original dimensions per file
+let fileDimensions = [];
+let previewGenId = 0; // to discard stale results
 
-// ---- Comparison slider ----
-let isDragging = false;
-
-function updateCompPosition(x) {
-  const rect = compContainer.getBoundingClientRect();
-  let pct = ((x - rect.left) / rect.width) * 100;
-  pct = Math.max(2, Math.min(98, pct));
-  compPosition = pct;
-  compDivider.style.left = pct + '%';
-  compOriginal.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+// ====== THEME ======
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('squish-theme', t);
 }
 
-compContainer.addEventListener('mousedown', e => { isDragging = true; updateCompPosition(e.clientX); });
-compContainer.addEventListener('touchstart', e => { isDragging = true; updateCompPosition(e.touches[0].clientX); }, { passive: true });
-window.addEventListener('mousemove', e => { if (isDragging) updateCompPosition(e.clientX); });
-window.addEventListener('touchmove', e => { if (isDragging) updateCompPosition(e.touches[0].clientX); }, { passive: true });
+themeBtn.addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+// Init theme
+setTheme(localStorage.getItem('squish-theme') || 'dark');
+
+// ====== COMPARISON SLIDER ======
+let isDragging = false;
+
+function setCompPosition(pct) {
+  pct = Math.max(2, Math.min(98, pct));
+  compDivider.style.left = pct + '%';
+  layerOrig.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+}
+
+function handleCompDrag(clientX) {
+  const rect = compContainer.getBoundingClientRect();
+  const pct = ((clientX - rect.left) / rect.width) * 100;
+  setCompPosition(pct);
+}
+
+compContainer.addEventListener('mousedown', e => { isDragging = true; handleCompDrag(e.clientX); });
+compContainer.addEventListener('touchstart', e => { isDragging = true; handleCompDrag(e.touches[0].clientX); }, { passive: true });
+window.addEventListener('mousemove', e => { if (isDragging) { e.preventDefault(); handleCompDrag(e.clientX); } });
+window.addEventListener('touchmove', e => { if (isDragging) handleCompDrag(e.touches[0].clientX); }, { passive: true });
 window.addEventListener('mouseup', () => isDragging = false);
 window.addEventListener('touchend', () => isDragging = false);
 
-// ---- Presets ----
+// ====== PRESETS ======
 document.querySelectorAll('.preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const w = btn.dataset.w;
-    const h = btn.dataset.h;
-    resizeW.value = w || '';
-    resizeH.value = h || '';
-    if (w && h) currentAspect = parseInt(w) / parseInt(h);
+    const w = btn.dataset.w, h = btn.dataset.h;
+    if (w && h) {
+      resizeW.value = w;
+      resizeH.value = h;
+      currentAspect = parseInt(w) / parseInt(h);
+    } else {
+      // "Custom" — reset to current image dims
+      const d = fileDimensions[previewIndex];
+      if (d) {
+        resizeW.value = d.w;
+        resizeH.value = d.h;
+        currentAspect = d.w / d.h;
+      } else {
+        resizeW.value = '';
+        resizeH.value = '';
+      }
+    }
     schedulePreview();
   });
 });
 
-// ---- Format ----
+// ====== FORMAT ======
 document.querySelectorAll('.format-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
@@ -872,13 +727,13 @@ document.querySelectorAll('.format-btn').forEach(btn => {
   });
 });
 
-// ---- Quality ----
+// ====== QUALITY ======
 quality.addEventListener('input', () => {
   qualityVal.textContent = quality.value + '%';
   schedulePreview();
 });
 
-// ---- Aspect lock ----
+// ====== ASPECT LOCK ======
 lockBtn.addEventListener('click', () => {
   aspectLocked = !aspectLocked;
   lockBtn.classList.toggle('locked', aspectLocked);
@@ -899,7 +754,7 @@ resizeH.addEventListener('input', () => {
 
 preserveAlpha.addEventListener('change', () => schedulePreview());
 
-// ---- Drop zone ----
+// ====== DROP ZONE ======
 dropzone.addEventListener('click', e => {
   if (e.target.closest('.thumb-remove')) return;
   e.stopPropagation();
@@ -917,35 +772,75 @@ fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInpu
 
 function addFiles(newFiles) {
   const added = Array.from(newFiles).filter(f => f.type.startsWith('image/'));
-  const startIdx = files.length;
+  if (added.length === 0) return;
+
+  const isFirst = files.length === 0;
   files = [...files, ...added];
 
-  // Create thumb URLs
-  added.forEach(f => thumbUrls.push(URL.createObjectURL(f)));
+  added.forEach(f => {
+    const url = URL.createObjectURL(f);
+    thumbUrls.push(url);
+    // Read dimensions
+    const idx = fileDimensions.length;
+    fileDimensions.push(null);
+    const img = new Image();
+    img.onload = () => {
+      fileDimensions[idx] = { w: img.naturalWidth, h: img.naturalHeight };
+      URL.revokeObjectURL(url);
+      // If this is the first file or the currently previewed file, populate dimensions
+      if (idx === previewIndex) {
+        populateDimensions(idx);
+        schedulePreview();
+      }
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+    // Re-create URL for thumb (first one was revoked on load)
+    thumbUrls[thumbUrls.length - 1] = URL.createObjectURL(f);
+  });
 
   processBtn.disabled = files.length === 0;
   batchInfo.innerHTML = files.length ? `<strong>${files.length}</strong> image${files.length !== 1 ? 's' : ''} queued` : '';
 
-  if (files.length > 0 && !currentAspect) {
-    const img = new Image();
-    const url = URL.createObjectURL(files[0]);
-    img.onload = () => {
-      currentAspect = img.width / img.height;
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => URL.revokeObjectURL(url);
-    img.src = url;
+  if (isFirst) previewIndex = 0;
+  renderThumbs();
+  schedulePreview();
+}
+
+function populateDimensions(idx) {
+  const d = fileDimensions[idx];
+  if (!d) return;
+
+  // Only auto-fill if user hasn't set a preset
+  const activePreset = document.querySelector('.preset-btn.active');
+  const isCustomOrNone = !activePreset || activePreset.dataset.w === '';
+
+  if (isCustomOrNone) {
+    resizeW.value = d.w;
+    resizeH.value = d.h;
+    currentAspect = d.w / d.h;
   }
 
-  renderThumbs();
-  if (startIdx === 0) { previewIndex = 0; }
-  schedulePreview();
+  origDims.innerHTML = `Original: <strong id="resetDims">${d.w}×${d.h}</strong> — click to reset`;
+
+  // Add click handler for reset
+  const resetEl = $('resetDims');
+  if (resetEl) {
+    resetEl.onclick = () => {
+      resizeW.value = d.w;
+      resizeH.value = d.h;
+      currentAspect = d.w / d.h;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      schedulePreview();
+    };
+  }
 }
 
 function removeFile(idx) {
   URL.revokeObjectURL(thumbUrls[idx]);
   files.splice(idx, 1);
   thumbUrls.splice(idx, 1);
+  fileDimensions.splice(idx, 1);
 
   processBtn.disabled = files.length === 0;
   batchInfo.innerHTML = files.length ? `<strong>${files.length}</strong> image${files.length !== 1 ? 's' : ''} queued` : '';
@@ -956,9 +851,13 @@ function removeFile(idx) {
     dropzoneThumbs.classList.add('hidden');
     dropzone.classList.remove('has-files');
     currentAspect = null;
+    origDims.innerHTML = '';
+    resizeW.value = '';
+    resizeH.value = '';
   } else {
     if (previewIndex >= files.length) previewIndex = files.length - 1;
     renderThumbs();
+    populateDimensions(previewIndex);
     schedulePreview();
   }
 }
@@ -988,12 +887,12 @@ function renderThumbs() {
       }
       previewIndex = i;
       renderThumbs();
+      populateDimensions(i);
       schedulePreview();
     });
     thumbStrip.appendChild(el);
   });
 
-  // Add more button
   const addBtn = document.createElement('div');
   addBtn.className = 'thumb-add';
   addBtn.textContent = '+';
@@ -1001,21 +900,19 @@ function renderThumbs() {
   thumbStrip.appendChild(addBtn);
 }
 
-// ---- Live Preview ----
+// ====== LIVE PREVIEW ======
 function schedulePreview() {
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(generatePreview, 150);
+  previewTimer = setTimeout(generatePreview, 120);
 }
 
 function generatePreview() {
-  if (files.length === 0) {
-    previewPanel.classList.add('hidden');
-    return;
-  }
+  if (files.length === 0) { previewPanel.classList.add('hidden'); return; }
 
   const file = files[previewIndex];
   if (!file) return;
 
+  const genId = ++previewGenId;
   previewPanel.classList.remove('hidden');
   previewLoading.classList.remove('hidden');
 
@@ -1029,11 +926,12 @@ function generatePreview() {
 
   img.onload = () => {
     URL.revokeObjectURL(url);
+    if (genId !== previewGenId) return; // stale
 
-    let w = img.naturalWidth;
-    let h = img.naturalHeight;
-    const origAspect = w / h;
+    const natW = img.naturalWidth, natH = img.naturalHeight;
+    const origAspect = natW / natH;
 
+    let w = natW, h = natH;
     const rw = resizeW.value ? parseInt(resizeW.value) : 0;
     const rh = resizeH.value ? parseInt(resizeH.value) : 0;
 
@@ -1041,13 +939,13 @@ function generatePreview() {
     else if (rw) { w = rw; h = Math.round(rw / origAspect); }
     else if (rh) { h = rh; w = Math.round(rh * origAspect); }
 
-    // Cap preview canvas for performance (preview only, full res on actual process)
-    const MAX_PREV = 2000;
+    // Cap preview canvas at 2000px for speed
     let pw = w, ph = h;
-    if (pw > MAX_PREV || ph > MAX_PREV) {
-      const scale = MAX_PREV / Math.max(pw, ph);
-      pw = Math.round(pw * scale);
-      ph = Math.round(ph * scale);
+    const MAX = 2000;
+    if (pw > MAX || ph > MAX) {
+      const s = MAX / Math.max(pw, ph);
+      pw = Math.round(pw * s);
+      ph = Math.round(ph * s);
     }
 
     const canvas = document.createElement('canvas');
@@ -1066,14 +964,12 @@ function generatePreview() {
 
     let mime = selectedFormat === 'original' ? file.type : selectedFormat;
     if (!mime || mime === 'image/gif') mime = 'image/png';
-    if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') {
-      mime = 'image/jpeg';
-    }
+    if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') mime = 'image/jpeg';
 
     const q = parseFloat(quality.value) / 100;
 
     canvas.toBlob(blob => {
-      if (!blob) {
+      if (!blob || genId !== previewGenId) {
         previewLoading.classList.add('hidden');
         return;
       }
@@ -1085,43 +981,46 @@ function generatePreview() {
       previewOrigUrl = URL.createObjectURL(file);
       previewCompUrl = URL.createObjectURL(blob);
 
+      // Set images
+      compOriginal.onload = () => { previewLoading.classList.add('hidden'); };
       compOriginal.src = previewOrigUrl;
       compCompressed.src = previewCompUrl;
 
-      // Update stats
+      // Stats
       prevOrigSize.textContent = formatBytes(file.size);
       prevNewSize.textContent = formatBytes(blob.size);
 
       const pct = ((1 - blob.size / file.size) * 100).toFixed(1);
       const isBigger = blob.size > file.size;
-      prevSaved.textContent = isBigger ? `+${Math.abs(pct)}%` : `-${pct}%`;
+      prevSaved.textContent = isBigger ? `+${Math.abs(pct)}%` : `${pct}%`;
       prevSaved.className = 'stat-value ' + (isBigger ? 'bigger' : 'saved');
 
-      previewDims.textContent = `${img.naturalWidth}×${img.naturalHeight} → ${w}×${h}`;
+      // Dimensions label
+      const changed = (w !== natW || h !== natH);
+      previewDims.textContent = changed ? `${natW}×${natH} → ${w}×${h}` : `${w}×${h}`;
 
-      // Reset comparison
-      updateCompPosition(compContainer.getBoundingClientRect().left + compContainer.getBoundingClientRect().width * compPosition / 100);
+      // Reset slider to 50%
+      setCompPosition(50);
 
-      previewLoading.classList.add('hidden');
     }, mime, q);
   };
 
   img.src = url;
 }
 
-// ---- Process All ----
+// ====== PROCESS ALL ======
 processBtn.addEventListener('click', async () => {
   if (files.length === 0) return;
   processing.classList.remove('hidden');
   progressFill.style.width = '0%';
   processedImages = [];
   let done = 0;
-
   const BATCH = 4;
+
   for (let i = 0; i < files.length; i += BATCH) {
     const batch = files.slice(i, i + BATCH);
-    const batchResults = await Promise.all(batch.map(f => compressImage(f)));
-    for (const r of batchResults) { if (r) processedImages.push(r); }
+    const res = await Promise.all(batch.map(f => compressImage(f)));
+    for (const r of res) { if (r) processedImages.push(r); }
     done = Math.min(i + BATCH, files.length);
     processText.textContent = `Processing ${done} / ${files.length}...`;
     progressFill.style.width = ((done / files.length) * 100) + '%';
@@ -1136,51 +1035,41 @@ function compressImage(file) {
   return new Promise(resolve => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-
     const timeout = setTimeout(() => { URL.revokeObjectURL(url); resolve(null); }, 30000);
 
     img.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(url); resolve(null); };
-
     img.onload = () => {
       clearTimeout(timeout);
       URL.revokeObjectURL(url);
-
       try {
         let w = img.naturalWidth, h = img.naturalHeight;
-        const origAspect = w / h;
+        const oa = w / h;
         const rw = resizeW.value ? parseInt(resizeW.value) : 0;
         const rh = resizeH.value ? parseInt(resizeH.value) : 0;
-
         if (rw && rh) { w = rw; h = rh; }
-        else if (rw) { w = rw; h = Math.round(rw / origAspect); }
-        else if (rh) { h = rh; w = Math.round(rh * origAspect); }
+        else if (rw) { w = rw; h = Math.round(rw / oa); }
+        else if (rh) { h = rh; w = Math.round(rh * oa); }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-
-        if (!preserveAlpha.checked) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+        if (!preserveAlpha.checked) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
         ctx.drawImage(img, 0, 0, w, h);
 
         let mime = selectedFormat === 'original' ? file.type : selectedFormat;
         if (!mime || mime === 'image/gif') mime = 'image/png';
         if (!preserveAlpha.checked && mime === 'image/png' && selectedFormat === 'original') mime = 'image/jpeg';
 
-        canvas.toBlob(blob => {
+        c.toBlob(blob => {
           if (!blob) { resolve(null); return; }
           const ext = mime.split('/')[1].replace('jpeg', 'jpg');
-          const baseName = file.name.replace(/\.[^.]+$/, '');
-          resolve({
-            name: `${baseName}.${ext}`, originalName: file.name, blob,
-            url: URL.createObjectURL(blob), width: w, height: h,
-            originalSize: file.size, newSize: blob.size,
-          });
+          const base = file.name.replace(/\.[^.]+$/, '');
+          resolve({ name: `${base}.${ext}`, blob, url: URL.createObjectURL(blob), width: w, height: h, originalSize: file.size, newSize: blob.size });
         }, mime, parseFloat(quality.value) / 100);
       } catch (e) { resolve(null); }
     };
-
     img.src = url;
   });
 }
@@ -1194,28 +1083,21 @@ function formatBytes(b) {
 function renderResults() {
   results.classList.remove('hidden');
   imageGrid.innerHTML = '';
-
   if (processedImages.length === 0) { resultsTitle.textContent = 'No images processed'; return; }
 
-  let totalOrig = 0, totalNew = 0;
-
+  let tO = 0, tN = 0;
   processedImages.forEach((img, i) => {
-    totalOrig += img.originalSize;
-    totalNew += img.newSize;
-    const saved = ((1 - img.newSize / img.originalSize) * 100).toFixed(1);
-    const bigger = img.newSize > img.originalSize;
-
+    tO += img.originalSize; tN += img.newSize;
+    const s = ((1 - img.newSize / img.originalSize) * 100).toFixed(1);
+    const big = img.newSize > img.originalSize;
     const card = document.createElement('div');
     card.className = 'image-card';
     card.innerHTML = `
       <div class="card-preview"><img src="${img.url}" alt="${img.name}" loading="lazy"></div>
       <div class="info">
         <div class="filename" title="${img.name}">${img.name}</div>
-        <div class="meta">
-          <span>${img.width}×${img.height}</span>
-          <span>${formatBytes(img.originalSize)} → ${formatBytes(img.newSize)}</span>
-        </div>
-        <div class="savings ${bigger ? 'bigger' : ''}">${bigger ? '⚠ +' + Math.abs(saved) + '% larger' : '✓ ' + saved + '% saved'}</div>
+        <div class="meta"><span>${img.width}×${img.height}</span><span>${formatBytes(img.originalSize)} → ${formatBytes(img.newSize)}</span></div>
+        <div class="savings ${big ? 'bigger' : ''}">${big ? '⚠ +' + Math.abs(s) + '% larger' : '✓ ' + s + '% saved'}</div>
         <div class="card-actions">
           <button class="btn-sm download" data-idx="${i}">Download</button>
           <button class="btn-sm remove" data-idx="${i}">✕</button>
@@ -1225,15 +1107,14 @@ function renderResults() {
   });
 
   imageGrid.onclick = e => {
-    const btn = e.target.closest('[data-idx]');
-    if (!btn) return;
-    const idx = parseInt(btn.dataset.idx);
-    if (btn.classList.contains('download')) downloadOne(idx);
-    if (btn.classList.contains('remove')) removeOne(idx);
+    const b = e.target.closest('[data-idx]');
+    if (!b) return;
+    const i = parseInt(b.dataset.idx);
+    b.classList.contains('download') ? downloadOne(i) : removeOne(i);
   };
 
-  const totalSaved = ((1 - totalNew / totalOrig) * 100).toFixed(1);
-  resultsTitle.textContent = `${processedImages.length} images — ${formatBytes(totalOrig)} → ${formatBytes(totalNew)} (${totalSaved}% saved)`;
+  const ts = ((1 - tN / tO) * 100).toFixed(1);
+  resultsTitle.textContent = `${processedImages.length} images — ${formatBytes(tO)} → ${formatBytes(tN)} (${ts}% saved)`;
 }
 
 function downloadOne(i) {
@@ -1252,16 +1133,11 @@ function removeOne(i) {
 downloadAllBtn.addEventListener('click', async () => {
   if (processedImages.length === 0) return;
   if (processedImages.length === 1) return downloadOne(0);
-
   const zip = new JSZip();
   const names = {};
   processedImages.forEach(img => {
     let name = img.name;
-    if (names[name]) {
-      const base = name.replace(/\.[^.]+$/, '');
-      const ext = name.split('.').pop();
-      name = `${base}_${names[name]}.${ext}`;
-    }
+    if (names[name]) { const b = name.replace(/\.[^.]+$/, ''), e = name.split('.').pop(); name = `${b}_${names[name]}.${e}`; }
     names[img.name] = (names[img.name] || 0) + 1;
     zip.file(name, img.blob);
   });
@@ -1275,12 +1151,14 @@ clearBtn.addEventListener('click', () => {
   thumbUrls.forEach(u => URL.revokeObjectURL(u));
   if (previewOrigUrl) URL.revokeObjectURL(previewOrigUrl);
   if (previewCompUrl) URL.revokeObjectURL(previewCompUrl);
-  files = []; thumbUrls = []; processedImages = [];
+  files = []; thumbUrls = []; fileDimensions = []; processedImages = [];
   previewOrigUrl = null; previewCompUrl = null;
   results.classList.add('hidden');
   previewPanel.classList.add('hidden');
   imageGrid.innerHTML = '';
   batchInfo.innerHTML = '';
+  origDims.innerHTML = '';
+  resizeW.value = ''; resizeH.value = '';
   processBtn.disabled = true;
   currentAspect = null;
   dropzoneEmpty.classList.remove('hidden');
